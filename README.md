@@ -13,7 +13,12 @@ relaying, not mapping existing public channels.
 ## Installing
 
 Matterlay is a simple Python 3 script. It is built on the *asyncio* module, and uses
-the new async syntax from Python 3.5+. It also uses the *pycrypto* module.
+the new async syntax from Python 3.5+. It also uses the following modules:
+
+* aiohttp
+* passlib
+* pycrypto (1.7 or later)
+* websockets
 
 When run the script will bind to localhost on port 9991. At this point that's hardcoded,
 but this should be moved to a config file or commandline parameter. Currently there
