@@ -128,6 +128,11 @@ class MattermostClient():
         except:
             return 'Found, but not parseable'
 
+    async def search_users(self, keyword, teamid):
+        result = await self.make_request('post', '/users/search', {'term': keyword, 'team_id': teamid})
+        j = await result.json()
+        return j
+
     async def get_channel_by_name(self, team, channel):
         result = await self.make_request('get', '/teams/name/{0}/channels/name/{1}'.format(team, channel))
         j = await result.json()
@@ -260,6 +265,12 @@ class Matterlay(object):
                                                                           " ".join([m['nickname'] for m in members])))
         await self.raw_reply(":matterlay 366 {0} {1} :End of /NAMES list\r\n".format(self.nick, channel))
 
+    async def search_users(self, keyword):
+        users = await self.mattermost.search_users(keyword, self.team_id)
+        for u in users:
+            await self.reply('{0}: {1} {2} ({3})'.format(u['username'], u['first_name'], u['last_name'], u['position']))
+        await self.reply('Found {0} users matching {1}'.format(len(users), keyword))
+
     async def _get_line(self):
         l = await self.reader.readline()
         return l.decode('utf8').rstrip()
@@ -375,6 +386,12 @@ class Matterlay(object):
                                 await self.reply("Usage: add <hostname> <team> <password")
                             else:
                                 await self.add_mattermost_server(*cmd[1:])
+                        elif pieces[2].startswith(':search'):
+                            cmd = pieces[2].split()
+                            if len(cmd) != 2:
+                                await self.reply("Usage: search <keyword>")
+                            else:
+                                await self.search_users(cmd[1])
                         else:
                             await self.reply("Unknown command %s, try 'help'" % pieces[2])
                     elif pieces[1][0] == '#':
