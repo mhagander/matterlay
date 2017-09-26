@@ -380,6 +380,7 @@ class Matterlay(object):
                         if pieces[2] == ':help':
                             await self.reply('Commands:')
                             await self.reply(' add <hostname> <password>')
+                            await self.reply(' search <searchterm>')
                         elif pieces[2].startswith(':add'):
                             cmd = pieces[2].split()
                             if len(cmd) != 4:
