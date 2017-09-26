@@ -379,7 +379,7 @@ class Matterlay(object):
                         # Sending message to the matterlay channel
                         if pieces[2] == ':help':
                             await self.reply('Commands:')
-                            await self.reply(' add <hostname> <password>')
+                            await self.reply(' add <hostname> <team> <password>')
                             await self.reply(' search <searchterm>')
                         elif pieces[2].startswith(':add'):
                             cmd = pieces[2].split()
