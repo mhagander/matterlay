@@ -40,22 +40,6 @@ class MattermostClient():
             headers=headers,
             data=json.dumps(options),
         )
-        try:
-            response.raise_for_status()
-        except requests.HTTPError as e:
-            data = e.response.json()
-            if data['status_code'] == 400:
-                raise InvalidOrMissingParameters(data['message'])
-            elif data['status_code'] == 401:
-                raise NoAccessTokenProvided(data['message'])
-            elif data['status_code'] == 403:
-                raise NotEnoughPermissions(data['message'])
-            elif data['status_code'] == 413:
-                raise ContentTooLarge(data['message'])
-            elif data['status_code'] == 501:
-                raise FeatureDisabled(data['message'])
-            else:
-                raise
 
         return response
 
@@ -491,7 +475,12 @@ class Matterlay(object):
 
     async def mattermost_handler(self, host, password):
         self.mattermost = MattermostClient(host)
-        await self.mattermost.login(self.nick, password)
+        try:
+            await self.mattermost.login(self.nick, password)
+        except Exception as e:
+            await self.reply('Login failed.')
+            return
+
         await self.reply('Logged in to mattermost, listing and joining channels')
 
         # Join all applicable channels
