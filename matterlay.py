@@ -238,7 +238,8 @@ class Matterlay(object):
     async def channel_post(self, sender, channel, s, flush=True):
         if channel[0] == '#':
             await self.maybe_join_channel(channel)
-        await self.raw_reply(':{0} PRIVMSG {1} :{2}\r\n'.format(sender, channel, s), flush)
+        for l in s.splitlines():
+            await self.raw_reply(':{0} PRIVMSG {1} :{2}\r\n'.format(sender, channel, l), flush)
 
     async def refresh_channel_names(self, channel):
         ch = await self.get_channel(channel)
