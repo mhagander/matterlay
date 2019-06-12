@@ -300,7 +300,7 @@ class Matterlay(object):
             if not l:
                 break
             if l.startswith("NICK "):
-                self.nick = l[5:]
+                self.nick = l[5:].lstrip(':')
                 await self.raw_reply(':matterlay 001 {0} Welcome!\r\n'.format(self.nick), False)
                 await self.reply('Welcome to matterlay. Please identify. Remember that your nick must match that in Mattermost.')
             elif l.startswith("PRIVMSG matterlay :"):
