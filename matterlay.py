@@ -430,7 +430,7 @@ class Matterlay(object):
             if j['event'] == 'posted':
                 # Something got posted in a channel
                 msg = json.loads(j['data']['post'])
-                if j['data']['sender_name'] == self.nick:
+                if j['data']['sender_name'].lstrip('@') == self.nick:
                     # Is this something sent from *this* client?
                     if msg['message'] in self.pending_sends:
                         self.pending_sends.remove(msg['message'])
@@ -456,7 +456,7 @@ class Matterlay(object):
                     channel,
                     msg['message']))
 
-                await self.channel_post(j['data']['sender_name'], channel, msg['message'])
+                await self.channel_post(j['data']['sender_name'].lstrip('@'), channel, msg['message'])
             elif j['event'] == 'channel_updated':
                 ch = json.loads(j['data']['channel'])
                 channel = ch['name']
