@@ -14,6 +14,7 @@ from Crypto.Cipher import AES
 
 db = sqlite3.connect('matterlay.db')
 
+
 class MattermostClient():
     def __init__(self, host):
         self.host = host
@@ -28,9 +29,9 @@ class MattermostClient():
         return {"Authorization": "Bearer {token:s}".format(token=self.token)}
 
     async def make_request(self, method, endpoint, options={}):
-        headers={"content-type": "text/javascript"}
+        headers = {"content-type": "text/javascript"}
         if self.token:
-            headers['Authorization']="Bearer {token:s}".format(token=self.token)
+            headers['Authorization'] = "Bearer {token:s}".format(token=self.token)
 
         async with aiohttp.request(
             method,
@@ -45,7 +46,7 @@ class MattermostClient():
         websocket = await websockets.connect(url)
 
         # Authenticate
-        j = json.dumps({'seq': 1, 'action': 'authentication_challenge', 'data': { 'token': self.token }}).encode('utf8')
+        j = json.dumps({'seq': 1, 'action': 'authentication_challenge', 'data': {'token': self.token}}).encode('utf8')
         await websocket.send(j)
         while True:
             msg = await websocket.recv()
@@ -67,7 +68,6 @@ class MattermostClient():
         while True:
             msg = await websocket.recv()
             await handler(msg)
-
 
     async def login(self, user, password):
         result = await self.make_request('post', '/users/login', {
@@ -106,7 +106,7 @@ class MattermostClient():
             return None
         try:
             return '{0} {1} ({2})'.format(result['first_name'], result['last_name'], result['position'])
-        except:
+        except Exception:
             return 'Found, but not parseable'
 
     async def search_users(self, keyword, teamid):
@@ -204,7 +204,7 @@ class Matterlay(object):
         return self.team_id
 
     async def get_channel(self, channel):
-        if not channel in self.channels:
+        if channel not in self.channels:
             self.channels[channel] = await self.mattermost.get_channel_by_name(self.team_name, channel)
         return self.channels[channel]
 
@@ -243,8 +243,8 @@ class Matterlay(object):
         members = await self.mattermost.get_channel_members(ch['id'])
 
         await self.raw_reply(":matterlay 353 {0} = {1} :{2}\r\n".format(self.nick,
-                                                                          channel,
-                                                                          " ".join([m['nickname'] for m in members])))
+                                                                        channel,
+                                                                        " ".join([m['nickname'] for m in members])))
         await self.raw_reply(":matterlay 366 {0} {1} :End of /NAMES list\r\n".format(self.nick, channel))
 
     async def search_users(self, keyword):
@@ -254,8 +254,8 @@ class Matterlay(object):
         await self.reply('Found {0} users matching {1}'.format(len(users), keyword))
 
     async def _get_line(self):
-        l = await self.reader.readline()
-        return l.decode('utf8').rstrip()
+        line = await self.reader.readline()
+        return line.decode('utf8').rstrip()
 
     async def add_mattermost_server(self, host, team, password):
         curs = db.cursor()
@@ -293,16 +293,16 @@ class Matterlay(object):
 
     async def process_prelogin(self):
         while True:
-            l = await self._get_line()
-            if not l:
+            line = await self._get_line()
+            if not line:
                 break
-            if l.startswith("NICK "):
-                self.nick = l[5:].lstrip(':')
+            if line.startswith("NICK "):
+                self.nick = line[5:].lstrip(':')
                 await self.raw_reply(':matterlay 001 {0} Welcome!\r\n'.format(self.nick), False)
                 await self.reply('Welcome to matterlay. Please identify. Remember that your nick must match that in Mattermost.')
-            elif l.startswith("PRIVMSG matterlay :"):
-                if l[18:27].upper() == ":IDENTIFY":
-                    pwd = l[28:]
+            elif line.startswith("PRIVMSG matterlay :"):
+                if line[18:27].upper() == ":IDENTIFY":
+                    pwd = line[28:]
                     curs = db.cursor()
                     curs.execute("SELECT id, hashedpwd FROM users WHERE nick=?", (self.nick, ))
                     ret = curs.fetchall()
@@ -333,7 +333,6 @@ class Matterlay(object):
                 # Don't bother logging invalid commands before identifying
                 pass
 
-
     async def run(self):
         try:
             await self.process_prelogin()
@@ -343,20 +342,20 @@ class Matterlay(object):
 
             # Loop for all IRC commands
             while True:
-                l = await self._get_line()
-                if not l:
+                line = await self._get_line()
+                if not line:
                     break
-                elif l.startswith("PING "):
+                elif line.startswith("PING "):
                     await self.raw_reply(':matterlay PONG matterlay\r\n')
-                elif l.startswith("JOIN "):
+                elif line.startswith("JOIN "):
                     # This part isn't really implemented yet. We auto-join all mattermost channels
                     # when traffic comes the other way, but we should perhaps be able to force-join
                     # channels as well, as they might show up after the fact?
-                    pieces = l.split(' ',2 )
+                    pieces = line.split(' ', 2)
                     if pieces[1] not in self.joined_channels:
                         await self.reply("Sorry, JOIN not implemented yet")
-                elif l.startswith("PRIVMSG "):
-                    pieces = l.split(' ', 2)
+                elif line.startswith("PRIVMSG "):
+                    pieces = line.split(' ', 2)
                     if pieces[1] == 'matterlay':
                         # Sending message to the matterlay channel
                         if pieces[2] == ':help':
@@ -397,28 +396,28 @@ class Matterlay(object):
                             await self.mattermost.create_post(cid, pieces[2][1:])
                         else:
                             await self.reply('Could not find user %s' % pieces[1])
-                elif l.startswith("NAMES"):
-                    pieces = l.split(' ', 1)
+                elif line.startswith("NAMES"):
+                    pieces = line.split(' ', 1)
                     await self.refresh_channel_names(pieces[1])
-                elif l.startswith("WHOIS"):
-                    pieces = l.split(' ', 1)
+                elif line.startswith("WHOIS"):
+                    pieces = line.split(' ', 1)
                     nickinfo = await self.mattermost.get_user_namestring(pieces[1])
                     if nickinfo:
                         await self.raw_reply(":matterlay 311 {0} {0} {0} matterlay * :{1}\r\n".format(pieces[1], nickinfo))
                     else:
                         await self.raw_reply(":matterlay 401 {0} No such nick\r\n".format(pieces[1]))
-                elif l.startswith("MODE "):
+                elif line.startswith("MODE "):
                     # Ignore mode requests for now, but don't complain about them.
                     pass
-                elif l.startswith("QUIT"):
+                elif line.startswith("QUIT"):
                     break
                 else:
-                    print("Unknown IRC input: %s" % l)
+                    print("Unknown IRC input: %s" % line)
         finally:
             try:
                 self.writer.close()
                 self.reader.close()
-            except:
+            except Exception:
                 pass
 
     async def mattermost_event_handler(self, event):
@@ -470,7 +469,6 @@ class Matterlay(object):
         except Exception as e:
             print("Mattermost event handler exception: {0}".format(e))
 
-
     async def mattermost_handler(self, host, password):
         self.mattermost = MattermostClient(host)
         try:
@@ -493,15 +491,15 @@ class Matterlay(object):
         while True:
             try:
                 await self.mattermost.connect_websocket(self.mattermost_event_handler)
-            except:
+            except Exception:
                 print("Websocket connection closed. Retrying in 5 seconds.")
                 await asyncio.sleep(5)
-
 
 
 async def irc_server(reader, writer):
     # Each new connection gets a Matterlay object, and runs independently in it.
     await Matterlay(reader, writer).run()
+
 
 async def irc_handler():
     await asyncio.start_server(irc_server, '127.0.0.1', 9991)
@@ -513,7 +511,7 @@ if __name__ == "__main__":
     # Set up the database schema.
     # XXX: this is really not going to scale once we ever want to change the schema,
     #      but for now it's so trivial we can get away with it.
-    c.execute("CREATE TABLE IF NOT EXISTS users (id integer PRIMARY KEY AUTOINCREMENT, nick text NOT NULL UNIQUE, hashedpwd text NOT NULL)");
+    c.execute("CREATE TABLE IF NOT EXISTS users (id integer PRIMARY KEY AUTOINCREMENT, nick text NOT NULL UNIQUE, hashedpwd text NOT NULL)")
     c.execute("CREATE TABLE IF NOT EXISTS mattermost_accounts(id integer PRIMARY KEY AUTOINCREMENT, user int NOT NULL REFERENCES users(id), host text not null, team text, password text)")
     db.commit()
 
