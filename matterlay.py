@@ -2,8 +2,6 @@
 
 import asyncio
 import aiohttp
-import requests
-import sys
 import json
 import websockets
 import sqlite3
