@@ -479,6 +479,7 @@ class Matterlay(object):
         try:
             await self.mattermost.login(self.nick, password)
         except Exception as e:
+            print("Login exception: {}".format(e))
             await self.reply('Login failed.')
             return
 
