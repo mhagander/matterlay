@@ -34,14 +34,13 @@ class MattermostClient():
         if self.token:
             headers['Authorization']="Bearer {token:s}".format(token=self.token)
 
-        response = await aiohttp.request(
+        async with aiohttp.request(
             method,
             url='https://' + self.host + '/api/v4' + endpoint,
             headers=headers,
             data=json.dumps(options),
-        )
-
-        return response
+        ) as response:
+            return response
 
     async def connect_websocket(self, handler):
         url = 'wss://{0}/api/v4/websocket'.format(self.host)
